@@ -83,9 +83,43 @@ NOISY_TOOLS = {"Read", "Glob", "Grep", "ToolSearch", "LS", "TodoWrite", "TodoRea
 # NOTE: the Claude Code hook *commands* registered in settings.json must never contain the
 # substring "kuzu" (kuzu-memory's installer deletes such hook entries); these paths are only
 # used inside this process, so the interpreter path below is safe.
-DEFAULT_BRIDGE_PYTHON = "C:/Users/Admin/AppData/Roaming/uv/tools/kuzu-memory/Scripts/python.exe"
 BRIDGE_NAME = "hydra_bridge.py"
-BRIDGE_CANDIDATE_DIRS = [Path(__file__).resolve().parent, Path("C:/Users/Admin/Desktop/USB/hydra-mem")]
+
+
+def _hydra_config(key: str) -> str:
+    """One value out of ~/.hydra/config.json, the stack's single home for paths. Never raises."""
+    try:
+        return str(json.loads((Path.home() / ".hydra" / "config.json")
+                              .read_text(encoding="utf-8")).get(key) or "")
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
+def _discover_bridge_python() -> str:
+    """Machine-agnostic: no path from any one machine is written into this file. Order is
+    $HYDRA_BRIDGE_PYTHON, then ~/.hydra/config.json, then a kuzu-memory tool install belonging to
+    THIS user on any OS. Empty string means no bridge, which every caller already handles."""
+    cfg = _hydra_config("bridge_python")
+    if cfg:
+        return cfg
+    home = Path.home()
+    for cand in (home / ".local/share/uv/tools/kuzu-memory/bin/python",          # uv, Linux/macOS
+                 home / "AppData/Roaming/uv/tools/kuzu-memory/Scripts/python.exe",  # uv, Windows
+                 home / ".local/pipx/venvs/kuzu-memory/bin/python",              # pipx, Linux/macOS
+                 home / "pipx/venvs/kuzu-memory/Scripts/python.exe"):            # pipx, Windows
+        if cand.exists():
+            return str(cand)
+    return ""
+
+
+DEFAULT_BRIDGE_PYTHON = _discover_bridge_python()
+BRIDGE_CANDIDATE_DIRS = list(dict.fromkeys(d for d in (
+    Path(os.environ["HYDRA_BRIDGE_DIR"]).expanduser() if os.environ.get("HYDRA_BRIDGE_DIR") else None,
+    Path(__file__).resolve().parent,
+    Path(_hydra_config("mem_py")).expanduser().parent if _hydra_config("mem_py") else None,
+    Path.home() / ".hydra" / "stack" / "memory" / "hydra-mem",
+    Path.home() / ".claude" / "hydra-mem",
+) if d is not None))
 BRIDGE_CONTEXT_TIMEOUT = 2.0      # seconds for a LIVE context call at SessionStart (env HYDRA_BRIDGE_CONTEXT_TIMEOUT)
 BRIDGE_CONTEXT_TOTAL_BUDGET = 3200  # chars; hydra context (2400) + bridge context
 BRIDGE_CACHE_FRESH_S = 6 * 3600   # a cached bridge context younger than this skips the live call entirely

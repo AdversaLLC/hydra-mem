@@ -85,10 +85,13 @@ What the hooks do when the bridge is present:
 
 Discovery and knobs (all optional):
 
-- `HYDRA_BRIDGE_PYTHON` interpreter for the bridge. Default
-  `C:/Users/Admin/AppData/Roaming/uv/tools/kuzu-memory/Scripts/python.exe`.
-- `HYDRA_BRIDGE` path to `hydra_bridge.py`. Default: next to `hydra_mem.py`, then
-  `C:/Users/Admin/Desktop/USB/hydra-mem/hydra_bridge.py`.
+- `HYDRA_BRIDGE_PYTHON` interpreter for the bridge. Default: `bridge_python` in
+  `~/.hydra/config.json`, else a `kuzu-memory` tool install under this user's uv or pipx directory
+  (Linux, macOS or Windows), else empty, which simply turns the bridge off. No machine's absolute
+  path is baked into the source.
+- `HYDRA_BRIDGE` path to `hydra_bridge.py`. Default search order: `HYDRA_BRIDGE_DIR`, next to
+  `hydra_mem.py`, the folder of `mem_py` in `~/.hydra/config.json`, `~/.hydra/stack/memory/hydra-mem`,
+  then `~/.claude/hydra-mem`.
 - `HYDRA_BRIDGE_CONTEXT_TIMEOUT` seconds for the live `context` call at SessionStart (default 2).
 - `HYDRA_BRIDGE_DISABLE=1` turns the whole bridge path off.
 - `<root>` is the git toplevel of the hook's `cwd`, else the `cwd` itself.
