@@ -5,4 +5,3 @@ mem.db-wal
 mem.db-shm
 bridge.log
 bridge-cache/
-HANDOVER.md
