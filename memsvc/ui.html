@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory</title>
+<style>
+  :root { color-scheme: light dark; --bg:#f6f5f2; --card:#fff; --ink:#1c1b19; --mute:#6b6a66; --line:#dcdad4; --accent:#1f6f5c; --warn:#a4501a; --bad:#a8322d; --ok:#1f6f5c; --on-kind:#fff;
+          --k-note:#6b6a66; --k-insight:#355fb0; --k-decision:#1f6f5c; --k-failed_path:#a8322d; --k-correction:#a4501a; --k-question:#8a6d00; --k-claim:#7b4aa3; --k-measurement:#1b7285; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --bg:#161614; --card:#1f1f1c; --ink:#ecebe6; --mute:#9a988f; --line:#33322e; --accent:#55b79f; --warn:#e0a064; --bad:#e07a74; --ok:#55b79f; --on-kind:#101010;
+          --k-note:#a8a69d; --k-insight:#8fb0f0; --k-decision:#55b79f; --k-failed_path:#e58a84; --k-correction:#e0a064; --k-question:#d4b84a; --k-claim:#c19be6; --k-measurement:#6cc4d6; } }
+  :root[data-theme="dark"] { color-scheme: dark; --bg:#161614; --card:#1f1f1c; --ink:#ecebe6; --mute:#9a988f; --line:#33322e; --accent:#55b79f; --warn:#e0a064; --bad:#e07a74; --ok:#55b79f; --on-kind:#101010;
+          --k-note:#a8a69d; --k-insight:#8fb0f0; --k-decision:#55b79f; --k-failed_path:#e58a84; --k-correction:#e0a064; --k-question:#d4b84a; --k-claim:#c19be6; --k-measurement:#6cc4d6; }
+  :root[data-theme="light"] { color-scheme: light; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  h1 { font-size: 20px; margin:0; font-weight:650; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:13px; color:var(--mute); }
+  .chip { border:1px solid var(--line); border-radius:999px; padding:2px 10px; background:var(--card); }
+  .chip.ok { color:var(--ok); } .chip.bad { color:var(--bad); } .chip.live { color:var(--accent); border-color:var(--accent); }
+  .token { display:flex; gap:8px; margin-bottom:14px; }
+  input, select, button, textarea { font:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:7px 10px; }
+  input[type=password], input[type=text] { flex:1; min-width:0; }
+  input[type=checkbox] { padding:0; }
+  button { cursor:pointer; } button:hover { border-color:var(--accent); } button:disabled { opacity:.55; cursor:default; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-kind); }
+  button.danger { color:var(--bad); }
+  button.small { padding:2px 10px; font-size:13px; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  nav { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+  nav button[aria-selected=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .card.fresh { border-color:var(--accent); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .title { font-weight:600; } .meta { color:var(--mute); font-size:13px; } .body { margin:6px 0; white-space:pre-wrap; word-break:break-word; }
+  .snippet { color:var(--mute); margin:2px 0 4px; word-break:break-word; }
+  .tag { font-size:12px; border:1px solid var(--line); border-radius:6px; padding:0 6px; color:var(--mute); }
+  .tag.warn { color:var(--warn); border-color:var(--warn); }
+  .card-type { font-size:12px; font-weight:650; border-radius:6px; padding:1px 8px; color:var(--on-kind); background:var(--k-note); }
+  .type-insight { background:var(--k-insight); } .type-decision { background:var(--k-decision); } .type-failed_path { background:var(--k-failed_path); }
+  .type-correction { background:var(--k-correction); } .type-question { background:var(--k-question); } .type-claim { background:var(--k-claim); }
+  .type-measurement { background:var(--k-measurement); }
+  .detail:not(:empty) { border-top:1px dashed var(--line); margin-top:8px; padding-top:8px; }
+  .tl-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:3px 6px; border-radius:6px; }
+  .tl-row.anchor { background:var(--bg); outline:1px solid var(--accent); }
+  pre { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; white-space:pre-wrap; word-break:break-word; font-size:13px; }
+  .empty { color:var(--mute); padding:16px 4px; }
+  #msg { min-height:22px; font-size:14px; margin-bottom:8px; } #msg.err { color:var(--bad); } #msg.ok { color:var(--ok); }
+  table { width:100%; border-collapse:collapse; font-size:14px; } th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  label { font-size:13px; color:var(--mute); display:block; margin-bottom:2px; }
+  .tablewrap { overflow-x:auto; }
+  @media (max-width: 600px) {
+    main { padding: 12px 12px 40px; }
+    .token { flex-direction: column; }
+    nav button { flex: 1 1 auto; }
+    .row > input[type=text], .row > select { flex: 1 1 100%; max-width: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Memory</h1>
+    <div class="chips" id="chips" aria-live="polite"></div>
+    <button id="theme" class="small" aria-label="Colour theme">Theme: auto</button>
+  </header>
+  <div class="token">
+    <input id="tok" type="password" autocomplete="off" placeholder="Paste a token (admin token for Review, Agents, Compaction)" aria-label="Token">
+    <button id="save" class="primary">Use token</button>
+  </div>
+  <div id="msg" role="status"></div>
+  <nav role="tablist" id="tabs"></nav>
+  <section id="view" aria-live="polite"></section>
+</main>
+<script>
+(function () {
+  "use strict";
+  var view = document.getElementById("view"), msg = document.getElementById("msg"), tok = document.getElementById("tok");
+  var KINDS = ["note", "insight", "decision", "failed_path", "correction", "question", "claim", "measurement"];
+  var store = {
+    get: function (k) { try { return sessionStorage.getItem(k) || ""; } catch (e) { return ""; } },
+    set: function (k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* private window: the page still works, it just forgets */ } }
+  };
+  // A sign-in link from `memctl ui` (#token=...): keep it for this tab like a pasted token, then wipe it from the address bar.
+  // The fragment is never sent to the server, so it is not in any request or log.
+  var link = /(?:^#|&)token=([^&]+)/.exec(location.hash), linkTok = link ? decodeURIComponent(link[1]) : "";
+  if (link) { store.set("memtok", linkTok); history.replaceState(null, "", location.pathname + location.search); }
+  tok.value = store.get("memtok") || linkTok;
+
+  // Note text is untrusted. Everything below builds elements and sets textContent; it never builds markup from data.
+  function el(tag, attrs) {
+    var n = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) { if (k === "class") n.className = attrs[k]; else if (k.slice(0, 2) === "on") n.addEventListener(k.slice(2), attrs[k]); else n.setAttribute(k, attrs[k]); });
+    function add(c) {
+      if (c === null || c === undefined || c === false) return;
+      if (Array.isArray(c)) { c.forEach(add); return; }
+      n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    }
+    for (var i = 2; i < arguments.length; i++) add(arguments[i]);
+    return n;
+  }
+  function say(text, kind) { msg.textContent = text || ""; msg.className = kind || ""; }
+  function api(method, path, body) {
+    var h = { "Authorization": "Bearer " + tok.value.trim() };
+    var opt = { method: method, headers: h };
+    if (body !== undefined) { h["Content-Type"] = "application/json"; opt.body = JSON.stringify(body); }
+    return fetch(path, opt).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error((j && j.error) || ("HTTP " + r.status)); return j; }); });
+  }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function empty(text) { clear(view); view.appendChild(el("div", { "class": "empty" }, text)); }
+  function fail(e) { say(e.message === "admin only" ? "This tab needs the admin token." : e.message, "err"); }
+  function safeClass(s) { return String(s || "").replace(/[^a-z_]/g, ""); }
+  function when(ts) { return String(ts || "").slice(0, 16).replace("T", " ") + " UTC"; }
+  function chip(text, cls) { return el("span", { "class": "tag" + (cls ? " " + cls : "") }, text); }
+
+  // ---- theme: follows the system until the owner picks one; the choice lives in this tab only
+  var themeBtn = document.getElementById("theme"), theme = store.get("memtheme") || "auto";
+  function applyTheme() {
+    var r = document.documentElement;
+    if (theme === "auto") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", theme);
+    themeBtn.textContent = "Theme: " + theme;
+  }
+  themeBtn.addEventListener("click", function () { theme = theme === "auto" ? "dark" : (theme === "dark" ? "light" : "auto"); store.set("memtheme", theme); applyTheme(); });
+  applyTheme();
+
+  // ---- one note, shown the way the three-step read path works: an index line first, full text and neighbours only on request
+  function noteCard(it) {
+    var full = el("div", { "class": "detail" }), around = el("div", { "class": "detail" });
+    var fullBtn = el("button", { "class": "small" }, "Full text"), tlBtn = el("button", { "class": "small" }, "Timeline");
+    fullBtn.addEventListener("click", function () {
+      if (full.firstChild) { clear(full); fullBtn.textContent = "Full text"; return; }
+      fullBtn.disabled = true;
+      api("POST", "/v1/observations", { ids: [it.id] }).then(function (r) {
+        fullBtn.disabled = false; fullBtn.textContent = "Hide full text";
+        var f = r.items[0];
+        if (!f) { full.appendChild(el("div", { "class": "meta" }, "This note is no longer visible to this token.")); return; }
+        full.appendChild(el("div", { "class": "body" }, f.body));
+        full.appendChild(el("div", { "class": "meta" }, ["source " + f.source, "session " + (f.session || "-"), f.work_tokens ? "reported work ~" + f.work_tokens + " tokens" : null, "~" + f.read_tokens + " tokens to read", f.status].filter(Boolean).join("  ·  ")));
+      }).catch(function (e) { fullBtn.disabled = false; fail(e); });
+    });
+    tlBtn.addEventListener("click", function () {
+      if (around.firstChild) { clear(around); tlBtn.textContent = "Timeline"; return; }
+      tlBtn.disabled = true;
+      api("POST", "/v1/timeline", { anchor: it.id, depth_before: 3, depth_after: 3 }).then(function (r) {
+        tlBtn.disabled = false; tlBtn.textContent = "Hide timeline";
+        if (!r.items.length) around.appendChild(el("div", { "class": "meta" }, "Nothing around it, or it is no longer visible."));
+        r.items.forEach(function (x) {
+          around.appendChild(el("div", { "class": "tl-row" + (x.is_anchor ? " anchor" : "") }, el("span", { "class": "meta" }, when(x.ts)),
+            el("span", { "class": "card-type type-" + safeClass(x.kind) }, x.kind), el("span", { "class": x.is_anchor ? "title" : "" }, x.title), el("span", { "class": "meta" }, "#" + x.handle)));
+        });
+      }).catch(function (e) { tlBtn.disabled = false; fail(e); });
+    });
+    return el("div", { "class": "card", "data-id": it.id },
+      el("div", { "class": "row" }, el("span", { "class": "card-type type-" + safeClass(it.kind) }, it.kind), chip("by " + (it.agent || "?")), chip(it.project || "global"), chip("conf " + it.conf), chip("trust " + it.trust)),
+      el("div", { "class": "title" }, it.title),
+      it.snippet ? el("div", { "class": "snippet" }, it.snippet) : null,
+      el("div", { "class": "row" }, el("span", { "class": "meta" }, "#" + it.handle + " • " + when(it.ts) + " • ~" + it.read_tokens + " tokens"), it.tags ? chip(it.tags) : null),
+      el("div", { "class": "row" }, fullBtn, tlBtn), full, around);
+  }
+
+  // ---- a paged list of index lines, shared by Feed and Search
+  function makeList(buildBody, summarize) {
+    var node = el("div"), list = el("div"), info = el("div", { "class": "meta" }), more = el("button", { "class": "small" }, "Load more");
+    var st = { next: null, ids: {} };
+    more.hidden = true;
+    node.appendChild(info); node.appendChild(list); node.appendChild(more);
+    function load(reset) {
+      var body = buildBody(); body.offset = reset ? 0 : (st.next || 0);
+      return api("POST", "/v1/search", body).then(function (r) {
+        if (reset) { clear(list); st.ids = {}; }
+        r.items.forEach(function (it) { if (!st.ids[it.id]) { st.ids[it.id] = 1; list.appendChild(noteCard(it)); } });
+        st.next = r.next_offset; more.hidden = st.next === null;
+        info.textContent = summarize(r);
+        var degraded = !!(r.degraded && r.degraded.length);
+        if (!r.items.length && reset) list.appendChild(el("div", { "class": "empty" }, degraded
+          ? "Nothing matched by keyword, and vector search is down, so this does not show that nothing is stored."
+          : "Insufficient evidence: nothing matching is stored (or this token may not see it)."));
+        if (degraded && r.items.length) info.textContent += " Vector search is down: keyword results only.";
+        if (r.scan_capped) info.textContent += " Only the newest notes were scanned, so older notes are not listed (a query with words still searches all of them).";
+        say("");
+      }).catch(fail);
+    }
+    function refreshTop() {
+      var body = buildBody(); body.offset = 0;
+      return api("POST", "/v1/search", body).then(function (r) {
+        var fresh = r.items.filter(function (it) { return !st.ids[it.id]; });
+        fresh.reverse().forEach(function (it) { st.ids[it.id] = 1; var c = noteCard(it); c.className += " fresh"; list.insertBefore(c, list.firstChild); });
+        if (fresh.length) info.textContent = summarize(r);
+      }).catch(fail);
+    }
+    more.addEventListener("click", function () { load(false); });
+    return { node: node, load: load, refreshTop: refreshTop };
+  }
+
+  var liveTimer = null;
+  function stopLive() { if (liveTimer) clearInterval(liveTimer); liveTimer = null; }
+  function kindSelect(label) { return el("select", { "aria-label": label }, el("option", { value: "" }, "all kinds"), KINDS.map(function (k) { return el("option", { value: k }, k); })); }
+
+  var tabs = {
+    Feed: function () {
+      var kind = kindSelect("Kind"), project = el("input", { type: "text", value: "*", "aria-label": "Project", style: "max-width:130px" });
+      var agent = el("input", { type: "text", placeholder: "agent", "aria-label": "Agent", style: "max-width:130px" });
+      var live = el("input", { type: "checkbox", id: "live", checked: "checked", "aria-label": "Live updates" });
+      var list = makeList(function () {
+        var b = { query: "", project: project.value.trim() || "*", limit: 20, order_by: "date_desc" };
+        if (kind.value) b.kind = kind.value; if (agent.value.trim()) b.agent = agent.value.trim();
+        return b;
+      }, function (r) { return r.total + " notes, newest first. Showing " + r.items.length + ", about " + r.total_read_tokens + " tokens to read them all."; });
+      var reload = function () { list.load(true); };
+      kind.addEventListener("change", reload); project.addEventListener("change", reload); agent.addEventListener("change", reload);
+      clear(view);
+      view.appendChild(el("div", { "class": "row" }, kind, project, agent, el("label", { "for": "live", style: "display:flex;gap:6px;align-items:center;margin:0" }, live, "live"), el("button", { "class": "small", onclick: reload }, "Refresh")));
+      view.appendChild(list.node);
+      list.load(true);
+      var ticks = 0;
+      liveTimer = setInterval(function () {
+        if (document.visibilityState !== "visible" || !live.checked) return;
+        list.refreshTop();
+        if (++ticks % 6 === 0) status();                       // keep the header counts honest, about every 30 seconds
+      }, 5000);
+    },
+    Search: function () {
+      var q = el("input", { type: "text", placeholder: "Search the index (empty lists the newest)", "aria-label": "Query" });
+      var kind = kindSelect("Kind"), project = el("input", { type: "text", value: "*", "aria-label": "Project", style: "max-width:130px" });
+      var agent = el("input", { type: "text", placeholder: "agent", "aria-label": "Agent", style: "max-width:120px" });
+      var tag = el("input", { type: "text", placeholder: "tag", "aria-label": "Tag", style: "max-width:120px" });
+      var since = el("input", { type: "text", placeholder: "since 2026-03-05", "aria-label": "Since", style: "max-width:150px" });
+      var until = el("input", { type: "text", placeholder: "until", "aria-label": "Until", style: "max-width:130px" });
+      var order = el("select", { "aria-label": "Order" }, el("option", { value: "" }, "best match"), el("option", { value: "date_desc" }, "newest first"), el("option", { value: "date_asc" }, "oldest first"));
+      var list = makeList(function () {
+        var b = { query: q.value, project: project.value.trim() || "*", limit: 20 };
+        if (kind.value) b.kind = kind.value; if (agent.value.trim()) b.agent = agent.value.trim(); if (tag.value.trim()) b.tag = tag.value.trim();
+        if (since.value.trim()) b.date_start = since.value.trim(); if (until.value.trim()) b.date_end = until.value.trim(); if (order.value) b.order_by = order.value;
+        return b;
+      }, function (r) { return "Showing " + r.items.length + " of " + r.total + ". Reading all shown would cost about " + r.total_read_tokens + " tokens: open only what you need."; });
+      var run = function () { list.load(true); };
+      q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+      clear(view);
+      view.appendChild(el("div", { "class": "row" }, q, el("button", { "class": "primary", onclick: run }, "Search")));
+      view.appendChild(el("div", { "class": "row", style: "margin:8px 0" }, kind, project, agent, tag, since, until, order));
+      view.appendChild(list.node);
+    },
+    Sessions: function () {
+      api("GET", "/v1/sessions?limit=50").then(function (rows) {
+        clear(view);
+        if (!rows.length) return empty("No sessions yet. Agents group a run's notes by passing a session id when they save.");
+        var detail = el("div");
+        rows.forEach(function (s) {
+          var open = function () {
+            clear(detail);
+            api("POST", "/v1/timeline", { session: s.session.indexOf(":") === -1 ? s.session + ":" : s.session }).then(function (r) {
+              detail.appendChild(el("div", { "class": "meta" }, "Notes of " + s.session + ", oldest first."));
+              r.items.forEach(function (it) { detail.appendChild(noteCard(it)); });
+              if (!r.items.length) detail.appendChild(el("div", { "class": "empty" }, "No notes visible to this token."));
+              detail.scrollIntoView({ behavior: "smooth", block: "start" });
+            }).catch(fail);
+          };
+          view.appendChild(el("div", { "class": "card" },
+            el("div", { "class": "row" }, el("span", { "class": "title" }, s.session.indexOf(":") === -1 ? s.session + " (notes without a session id)" : s.session),
+              chip(s.count + (s.count === 1 ? " note" : " notes")), chip("by " + (s.agent || "?")), s.projects.map(function (p) { return chip(p); })),
+            el("div", { "class": "meta" }, when(s.first_ts) + " to " + when(s.last_ts)),
+            s.summary ? el("div", { "class": "body" }, s.summary) : null,
+            el("button", { "class": "small", onclick: open }, "Open session")));
+        });
+        view.appendChild(detail);
+      }).catch(fail);
+    },
+    Context: function () {
+      var project = el("input", { type: "text", value: "*", "aria-label": "Projects, comma separated", placeholder: "projects, comma separated" });
+      var budget = el("input", { type: "text", value: "1500", "aria-label": "Token budget", style: "max-width:100px" });
+      var full = el("input", { type: "checkbox", id: "full", "aria-label": "Longer notes" });
+      var out = el("div");
+      var run = function () {
+        var projects = project.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+        api("POST", "/v1/context", { project: projects.length ? projects : ["*"], budget_tokens: parseInt(budget.value, 10) || 1500, full: full.checked }).then(function (r) {
+          clear(out);
+          var e = r.economics;
+          out.appendChild(el("div", { "class": "row", style: "margin:8px 0" }, chip(e.notes + " notes"), chip("~" + e.read_tokens + " tokens to read"),
+            e.work_tokens ? chip("~" + e.work_tokens + " tokens of earlier work (agent-reported)") : chip("no reported work, so no savings claim"), e.work_tokens ? chip("saves ~" + e.saved_percent + "%") : null,
+            r.dropped.length ? chip(r.dropped.length + " dropped for budget", "warn") : null));
+          out.appendChild(r.context ? el("pre", {}, r.context) : el("div", { "class": "empty" }, "Nothing stored for these projects that this token may see."));
+          out.appendChild(el("div", { "class": "meta" }, "This is exactly what memory_context hands a model at the start of a session."));
+          say("");
+        }).catch(fail);
+      };
+      clear(view);
+      view.appendChild(el("div", { "class": "row" }, project, budget, el("label", { "for": "full", style: "display:flex;gap:6px;align-items:center;margin:0" }, full, "longer notes"), el("button", { "class": "primary", onclick: run }, "Preview")));
+      view.appendChild(out);
+    },
+    Review: function () {
+      api("GET", "/v1/review").then(function (rows) {
+        clear(view); if (!rows.length) return empty("Nothing waiting for review.");
+        rows.forEach(function (x) {
+          var screen = (x.screen || []).map(function (s) { return el("span", { "class": "tag warn" }, s); });
+          var act = function (path, extra, done) { return function () { api("POST", path, Object.assign({ id: x.id }, extra)).then(function () { say(done, "ok"); tabs.Review(); }).catch(fail); }; };
+          view.appendChild(el("div", { "class": "card" },
+            el("div", { "class": "row" }, el("span", { "class": "title" }, x.title), el("span", { "class": "tag" }, x.status), el("span", { "class": "tag" }, "by " + (x.agent || "?")), el("span", { "class": "tag" }, x.project || "global")),
+            el("div", { "class": "body" }, x.body), el("div", { "class": "row" }, screen),
+            el("div", { "class": "row" },
+              el("button", { "class": "primary", onclick: act("/v1/approve", {}, "Approved") }, "Approve"),
+              el("button", { "class": "danger", onclick: act("/v1/reject", { reason: "rejected in the dashboard" }, "Rejected. It is kept in the Trash tab and can be restored.") }, "Reject"),
+              el("button", { onclick: act("/v1/verify", { conf: "S" }, "Marked sourced (S)") }, "Mark S"),
+              el("button", { onclick: act("/v1/verify", { conf: "V" }, "Marked verified (V)") }, "Mark V"))));
+        });
+      }).catch(fail);
+    },
+    Trash: function () {
+      api("GET", "/v1/trash").then(function (rows) {
+        clear(view);
+        if (!rows.length) return empty("The trash is empty. Rejected notes are kept here with their audit trail, never deleted.");
+        view.appendChild(el("div", { "class": "meta" }, "Rejected notes are kept, not deleted. Restore brings one back."));
+        rows.forEach(function (x) {
+          var restore = function () { api("POST", "/v1/restore", { id: x.id }).then(function () { say("Restored", "ok"); tabs.Trash(); }).catch(fail); };
+          view.appendChild(el("div", { "class": "card" },
+            el("div", { "class": "row" }, el("span", { "class": "card-type type-" + safeClass(x.kind) }, x.kind), chip("by " + (x.agent || "?")), chip(x.project || "global"), chip("rejected " + when(x.rejected_at))),
+            el("div", { "class": "title" }, x.title), x.snippet ? el("div", { "class": "snippet" }, x.snippet) : null,
+            el("button", { "class": "primary small", onclick: restore }, "Restore")));
+        });
+      }).catch(fail);
+    },
+    Recall: function () {
+      var q = el("input", { type: "text", placeholder: "Ask the memory a question", "aria-label": "Question" });
+      var project = el("input", { type: "text", value: "*", "aria-label": "Project", style: "max-width:140px" });
+      var budget = el("input", { type: "text", value: "800", "aria-label": "Token budget", style: "max-width:90px" });
+      var out = el("div");
+      var run = function () {
+        api("POST", "/v1/recall", { query: q.value, project: project.value || "*", budget_tokens: parseInt(budget.value, 10) || undefined, limit: 8 }).then(function (r) {
+          clear(out);
+          var down = !!(r.degraded && r.degraded.length);
+          var verdict = r.sufficient ? (down ? "Keyword results only: vector search is down." : "Enough evidence found.")
+            : (down ? "Nothing matched by keyword, and vector search is down, so this does not show that nothing is stored." : "Insufficient evidence: nothing relevant is stored.");
+          out.appendChild(el("div", { "class": "meta" }, verdict + "  fts " + r.trace.fts + ", vector " + r.trace.vector + (r.trace.vector_error ? " (vector tier down)" : "")));
+          if (r.context) out.appendChild(el("pre", {}, r.context));
+          r.items.forEach(function (i) { out.appendChild(el("div", { "class": "card" }, el("div", { "class": "row" }, el("span", { "class": "title" }, i.title), el("span", { "class": "tag" }, i.kind), el("span", { "class": "tag" }, "conf " + i.conf), el("span", { "class": "tag" }, i.trust)), el("div", { "class": "body" }, i.body), el("div", { "class": "meta" }, i.id + (i.via !== "match" ? "  via " + i.via : "")))); });
+          say("");
+        }).catch(fail);
+      };
+      clear(view);
+      view.appendChild(el("div", { "class": "row" }, q, project, budget, el("button", { "class": "primary", onclick: run }, "Recall")));
+      view.appendChild(out);
+      q.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+    },
+    Agents: function () {
+      api("GET", "/v1/agents").then(function (rows) {
+        clear(view);
+        var name = el("input", { type: "text", placeholder: "new agent name", "aria-label": "Agent name" });
+        var lane = el("select", { "aria-label": "Lane" }, el("option", { value: "probation" }, "probation (writes wait for you)"), el("option", { value: "trusted" }, "trusted"), el("option", { value: "readonly" }, "readonly"));
+        var shown = el("div");
+        view.appendChild(el("div", { "class": "card" }, el("div", { "class": "row" }, name, lane, el("button", { "class": "primary", onclick: function () {
+          api("POST", "/v1/agents", { name: name.value.trim(), lane: lane.value }).then(function (r) { clear(shown); shown.appendChild(el("div", { "class": "meta" }, "Token for " + r.name + " (shown once, store it now):")); shown.appendChild(el("pre", {}, r.token)); say("Agent created", "ok"); }).catch(fail);
+        } }, "Create agent")), shown));
+        var t = el("table", {}, el("tr", {}, el("th", {}, "Agent"), el("th", {}, "Lane"), el("th", {}, "Scope"), el("th", {}, "")));
+        rows.forEach(function (a) {
+          var mk = function (label, path, body, cls) { return el("button", { "class": cls || "", onclick: function () { api("POST", path, body).then(function () { tabs.Agents(); }).catch(fail); } }, label); };
+          t.appendChild(el("tr", {}, el("td", {}, a.name + (a.revoked ? " (revoked)" : "")), el("td", {}, a.lane), el("td", {}, "read " + a.read.join(",") + " / write " + a.write.join(",")),
+            el("td", {}, a.revoked ? "" : el("span", { "class": "row" }, mk("trusted", "/v1/agents/lane", { name: a.name, lane: "trusted" }), mk("probation", "/v1/agents/lane", { name: a.name, lane: "probation" }), mk("revoke", "/v1/agents/revoke", { name: a.name }, "danger")))));
+        });
+        view.appendChild(el("div", { "class": "card tablewrap" }, t));
+      }).catch(fail);
+    },
+    Compaction: function () {
+      api("GET", "/v1/compact-report?dup=0.95").then(function (r) {
+        clear(view);
+        view.appendChild(el("div", { "class": "meta" }, r.n + " notes, " + r.d + " dimensions. " + r.note));
+        if (!r.duplicate_groups.length) view.appendChild(el("div", { "class": "empty" }, "No near-duplicate notes."));
+        r.duplicate_groups.forEach(function (g) {
+          var card = el("div", { "class": "card" }, el("div", { "class": "meta" }, "Near-duplicates: keep the first, the rest are candidates to archive."));
+          g.items.forEach(function (x) { card.appendChild(el("div", { "class": "row" }, el("span", { "class": "tag" }, x.id === g.keep ? "KEEP" : "extra"), el("span", { "class": "tag" }, "conf " + x.conf), el("span", { "class": "title" }, x.title), el("span", { "class": "meta" }, x.id))); });
+          view.appendChild(card);
+        });
+        view.appendChild(el("div", { "class": "meta" }, "Most unusual notes (geometry only, not importance):"));
+        r.outliers.forEach(function (o) { view.appendChild(el("div", { "class": "row" }, el("span", { "class": "tag" }, o.relative.toFixed(1) + "x mean"), el("span", {}, o.title))); });
+      }).catch(fail);
+    },
+    Stats: function () {
+      api("GET", "/v1/stats").then(function (s) { clear(view); view.appendChild(el("pre", {}, JSON.stringify(s, null, 2))); }).catch(fail);
+    }
+  };
+
+  var nav = document.getElementById("tabs");
+  Object.keys(tabs).forEach(function (name) {
+    nav.appendChild(el("button", { role: "tab", "aria-selected": "false", onclick: function () { select(name); } }, name));
+  });
+  function select(name) {
+    stopLive();
+    Array.prototype.forEach.call(nav.children, function (b) { b.setAttribute("aria-selected", b.textContent === name ? "true" : "false"); });
+    say(""); clear(view); tabs[name]();
+  }
+  function status() {
+    var chips = document.getElementById("chips"); clear(chips);
+    fetch("/v1/health").then(function (r) { return r.json(); }).then(function (h) {
+      chips.appendChild(el("span", { "class": "chip ok" }, "service up, v" + h.version));
+      if (!tok.value) return;
+      return api("GET", "/v1/stats").then(function (s) {
+        chips.appendChild(el("span", { "class": "chip" }, s.active + (s.cache ? " active notes" : " notes you can read")));
+        chips.appendChild(el("span", { "class": "chip " + (s.chain_ok ? "ok" : "bad") }, s.chain_ok ? "audit chain ok" : "AUDIT CHAIN BROKEN"));
+        if (s.cache) chips.appendChild(el("span", { "class": "chip" }, "cache " + s.cache.hits + " hits"));
+        if (s.scale && s.scale.message) chips.appendChild(el("span", { "class": "chip bad", title: s.scale.message }, s.scale.level === "full" ? "store at its listing limit" : "store is getting large: reads slowing"));
+        var v = s.vectors;
+        if (v) {
+          if (v.state === "ok" || v.state === "idle") chips.appendChild(el("span", { "class": "chip ok", title: v.reason || "" }, v.state === "ok" ? "vectors ok" : "vectors idle"));
+          else chips.appendChild(el("span", { "class": "chip bad", title: v.reason || "" }, "vector search off" + (v.state === "off" ? "" : " (" + v.state + ")") + ": " + (v.reason || "no reason given")));
+          if (v.missing && v.state !== "off") chips.appendChild(el("span", { "class": "chip bad", title: (v.warnings || []).join("; ") }, v.missing + " without a vector"));
+        }
+      });
+    }).catch(function () { chips.appendChild(el("span", { "class": "chip bad" }, "service unreachable")); });
+  }
+  document.getElementById("save").addEventListener("click", function () { store.set("memtok", tok.value.trim()); status(); select("Feed"); });
+  status(); select(tok.value ? "Feed" : "Recall");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<title>memsvc 0.3 Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column. Reference tables scroll sideways inside their own box; each plan item is a two-column row (id, then text) that stacks on a phone.
+   Palette: verdigris accent on a cool paper; evidence labels (V, S, U) carry their own semantic hues, separate from the accent. */
+:root {
+  --paper: #f1f5f4;
+  --sheet: #ffffff;
+  --ink: #12232b;
+  --muted: #53656c;
+  --rule: #d2dcdc;
+  --accent: #0a6b63;
+  --accent-soft: #dcefec;
+  --ev-v: #1b6a3a;
+  --ev-s: #8a5800;
+  --ev-u: #46598a;
+  --warn: #a43b28;
+  --warn-soft: #f8e6e1;
+  --code: #e7eeee;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", Arial, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --step--1: 0.8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.25rem;
+  --step-2: 1.625rem;
+  --step-3: 2.5rem;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d1719;
+    --sheet: #142225;
+    --ink: #e3eeee;
+    --muted: #93a8ab;
+    --rule: #25373b;
+    --accent: #5cc4b8;
+    --accent-soft: #123430;
+    --ev-v: #72d195;
+    --ev-s: #e3b55e;
+    --ev-u: #93abd0;
+    --warn: #ec8a75;
+    --warn-soft: #351f1a;
+    --code: #1b2e32;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0d1719;
+  --sheet: #142225;
+  --ink: #e3eeee;
+  --muted: #93a8ab;
+  --rule: #25373b;
+  --accent: #5cc4b8;
+  --accent-soft: #123430;
+  --ev-v: #72d195;
+  --ev-s: #e3b55e;
+  --ev-u: #93abd0;
+  --warn: #ec8a75;
+  --warn-soft: #351f1a;
+  --code: #1b2e32;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 50rem; margin: 0 auto; padding-block: 2.5rem 4.5rem; display: grid; gap: 3rem; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.15; text-wrap: balance; }
+h1 { font-size: var(--step-3); font-weight: 700; letter-spacing: -0.015em; }
+h2 { font-size: var(--step-2); font-weight: 650; }
+h3 { font-size: var(--step-0); font-weight: 650; }
+p { margin: 0; max-width: 66ch; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--code); padding: 0.05em 0.35em; border-radius: 3px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.eyebrow { font-family: var(--font-mono); font-size: var(--step--1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 0.9rem; }
+.lede { font-size: var(--step-1); line-height: 1.5; color: var(--muted); max-width: 60ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: var(--step--1); color: var(--muted); padding: 0; margin: 0.25rem 0 0; list-style: none; }
+.legend li { display: flex; gap: 0.5rem; align-items: baseline; }
+.ev { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; border: 1px solid currentColor; border-radius: 3px; padding: 0 0.32rem; line-height: 1.5; display: inline-block; }
+.ev-v { color: var(--ev-v); } .ev-s { color: var(--ev-s); } .ev-u { color: var(--ev-u); }
+section { display: grid; gap: 1.1rem; }
+.section-head { display: grid; gap: 0.4rem; }
+.section-head p { color: var(--muted); }
+.scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; min-width: 38rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--rule); }
+th { font-family: var(--font-mono); font-weight: 500; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 600; width: 28%; }
+.says { display: grid; gap: 0.8rem; padding: 0; margin: 0; list-style: none; }
+.says li { display: grid; grid-template-columns: 1.6rem 1fr; gap: 0.2rem 0.6rem; }
+.says li::before { content: ""; width: 0.5rem; height: 0.5rem; margin-top: 0.62rem; background: var(--accent); border-radius: 1px; }
+.says p { max-width: none; }
+.phase { display: grid; gap: 0.35rem; padding-top: 0.25rem; }
+.phase .when { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+ol.items { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.item { display: grid; grid-template-columns: 3rem 1fr; gap: 0 1rem; padding-block: 1.05rem; border-bottom: 1px solid var(--rule); }
+.id { font-family: var(--font-mono); font-weight: 500; font-size: 0.95rem; color: var(--accent); padding-top: 0.15rem; }
+.body { display: grid; gap: 0.4rem; min-width: 0; }
+.body p { max-width: 62ch; }
+.chk { font-size: 0.93rem; color: var(--muted); }
+.chk b { color: var(--ink); font-weight: 600; }
+.src { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; font-size: var(--step--1); color: var(--muted); }
+.decide { border-left: 3px solid var(--warn); background: var(--warn-soft); border-radius: 0 6px 6px 0; padding: 1rem 1.2rem; display: grid; gap: 0.7rem; }
+.decide h2 { font-size: var(--step-1); color: var(--warn); }
+.decide ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+.note { background: var(--accent-soft); border-radius: 6px; padding: 0.9rem 1.1rem; display: grid; gap: 0.35rem; }
+.note p { max-width: none; }
+footer { font-size: var(--step--1); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 1rem; }
+@media (max-width: 34rem) {
+  .item { grid-template-columns: 1fr; gap: 0.25rem; }
+  h1 { font-size: 2rem; }
+  .wrap { gap: 2.4rem; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">memsvc 0.2 to 0.3 &middot; 22 Oct 2026</span>
+    <h1>memsvc 0.3 Plan</h1>
+    <p class="lede">I read two sources and twelve repositories, then checked what I built against them. This page says what held up, what did not, and what I would build next, in order. Phase 1 is now built and tested; the notes under each item say what changed from the plan.</p>
+    <ul class="legend" aria-label="Evidence labels">
+      <li><span class="ev ev-v">V</span> checked or measured here</li>
+      <li><span class="ev ev-s">S</span> the source says so, with no evidence</li>
+      <li><span class="ev ev-u">U</span> my inference</li>
+    </ul>
+  </header>
+
+  <section aria-labelledby="read">
+    <div class="section-head">
+      <h2 id="read">What I read</h2>
+      <p>Four readers took the book in parallel, each from a written brief with a required result block. I checked the two claims I lean on hardest against the text myself.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Source</th><th>How</th><th>What it gave</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Unlocking Data with Generative AI and RAG, 2nd ed. (Bourne)</td><td>Chapters 1, 4, 5, 7&ndash;9 and 15&ndash;19 in full. Code read, not run.</td><td>A catalogue of failures, a few small ideas, and no number with a basis.</td></tr>
+          <tr><td class="k">Optimally Fuzzy Temporal Memory (Shankar and Howard, 2013)</td><td>In full, by me.</td><td>A principle about age and precision. No recipe for a note store.</td></tr>
+          <tr><td class="k"><a href="https://github.com/thedotmack/claude-mem">claude-mem</a> and its <a href="https://github.com/thedotmack/claude-mem-docs">docs repo</a></td><td>Source and docs read from shallow clones. Not installed.</td><td>The read path, private tags, trash and project spaces. Already built.</td></tr>
+          <tr><td class="k">Eight repositories you sent: <a href="https://github.com/thedotmack/rad-mem">rad-mem</a>, <a href="https://github.com/basicmachines-co/basic-memory">basic-memory</a>, <a href="https://github.com/buildingjoshbetter/TrueMemory">TrueMemory</a>, <a href="https://github.com/Glucksberg/cristalina-v4">cristalina-v4</a>, <a href="https://github.com/Tencent/WeKnora">WeKnora</a>, <a href="https://github.com/FailproofAI/failproofai">failproofai</a>, the token-savings dashboard, <a href="https://github.com/luisroquette-labs/youre-always_on_my_mind-free">You're Always on My Mind</a></td><td>Their GitHub pages only, so what they claim is <span class="ev ev-s">S</span>.</td><td>Confirmations of choices already made, and a handful of small ideas.</td></tr>
+          <tr><td class="k">claude-code-templates and claude-agents</td><td>Pages only.</td><td>Both are forks of agent-prompt collections. Nothing on memory.</td></tr>
+          <tr><td class="k">Managing Memory for AI Agents</td><td>Not re-read.</td><td>Already read earlier; most of its ten ideas are built.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="says">
+    <div class="section-head"><h2 id="says">What the reading says</h2></div>
+    <ul class="says">
+      <li><p>The book's agent-memory code is a list of what the write gate already stops: unconditional writes, the model's own replies stored as facts, self-scored confidence, provenance thrown away, and no way to say "I don't know". Take its ideas and none of its numbers: not one has a stated basis, and several contradict each other. <span class="ev ev-v">V</span></p></li>
+      <li><p>Two of its retrieval code samples are wrong. One wraps the cosine in an absolute value, so opposite vectors look close. The other sets the rank-fusion constant to 0 where the standard is 60. My code uses a signed cosine and 60. <span class="ev ev-v">V</span></p></li>
+      <li><p>The paper says a memory with limited room should keep recent material fine and old material coarse, in wider and wider time bands, and average old material rather than sample it. It proves this for forecasting a signal, not for finding a fact, and its experiments are three series and a linear learner. It tells me what to measure, not what to build yet. <span class="ev ev-s">S</span> <span class="ev ev-u">U</span></p></li>
+      <li><p>The repositories mostly agree with choices already made: extracted memories wait for confirmation before they count (WeKnora, claude-mem), storage is plain SQLite, and nothing needs the cloud. The few things worth taking are small. <span class="ev ev-s">S</span></p></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="review">
+    <div class="section-head">
+      <h2 id="review">What I found in what I built</h2>
+      <p>I ran each check on your real notes where that made sense. Only counts were read, never note text.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Finding</th><th>Evidence</th><th>Now</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Search filters ran after the top 40 had been cut, so a matching note ranked 41st was never found.</td><td><span class="ev ev-v">V</span> the new test failed, then passed</td><td>Fixed, and a deliberate break of that line is now caught.</td></tr>
+          <tr><td class="k">Cosine is signed, the fusion constant is 60, telemetry is off, and every read path applies lane, scope, expiry and status.</td><td><span class="ev ev-v">V</span> read in code; 10 of 10 deliberate breaks caught</td><td>Sound.</td></tr>
+          <tr><td class="k">The embedder reads only the first 256 tokens of a note. Your notes: median 83, longest 294, 1 of 276 over the limit.</td><td><span class="ev ev-v">V</span> measured</td><td>No change. Noted in the docs.</td></tr>
+          <tr><td class="k">Long ids waste room. The median id is 67 characters; short handles in packed text save about 17 tokens a note (15% of the block) and fit 20% more notes into a 400 to 800 token budget.</td><td><span class="ev ev-v">V</span> measured on your 276 notes</td><td>Phase 1.</td></tr>
+          <tr><td class="k">Read time grows faster than the note count. The list, timeline, context and sessions take 10 to 18 ms at 1,000 notes, 52 to 75 ms at 5,000 and 370 to 530 ms at 20,000, measured on a busy machine, so the exact values are high. Ranked search stays near 65 ms. Past 20,000 active notes the oldest drop out of the list, timeline, context and sessions with no message.</td><td><span class="ev ev-v">V</span> benchmark; the cap is in the code</td><td>Warnings now; SQL paging when it is needed.</td></tr>
+          <tr><td class="k">If the vector search fails, results look like a normal keyword answer. Only a debug field says otherwise.</td><td><span class="ev ev-v">V</span> read in code. The Ollama mix-up earlier was the same shape.</td><td>Phase 1.</td></tr>
+          <tr><td class="k">Nothing records which embedder made the stored vectors, so a different embedder of the same size would compare silently.</td><td><span class="ev ev-v">V</span> code <span class="ev ev-u">U</span> consequence</td><td>Phase 1.</td></tr>
+          <tr><td class="k">Two notes whose short handles collide would read as "missing". About a 1% chance of one clash at 10,000 notes.</td><td><span class="ev ev-u">U</span> birthday arithmetic</td><td>Phase 1.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="plan">
+    <div class="section-head">
+      <h2 id="plan">The plan</h2>
+      <p>Every item is written test first, with the test watched failing before the code exists. Every guard added gets a deliberate break in <code>tools/mutation_check.py</code>.</p>
+    </div>
+
+    <div class="phase">
+      <h3>Phase 1. Make what exists honest</h3>
+      <span class="when">Built 22 Oct 2026, in this order, test first. Each guard has a deliberate break that the tests must catch.</span>
+    </div>
+    <ol class="items">
+      <li class="item"><span class="id">1.1</span><div class="body"><h3>Say when an answer is degraded</h3><p>If the vector search fails, results carry <code>degraded</code> and the text says it is keyword-only. No evidence, degraded and error stay three different answers.</p><p class="chk"><b>Check:</b> break the vector index in a test; the JSON and the text both say so.</p><p class="chk"><b>Built.</b> Results carry <code>degraded</code>, the text says keyword-only, and an empty degraded answer is never read as "nothing stored". 12 tests.</p><div class="src"><span class="ev ev-v">V</span> our own incident <span class="ev ev-s">S</span> basic-memory fails loudly</div></div></li>
+      <li class="item"><span class="id">1.2</span><div class="body"><h3>Handles everywhere</h3><p>Packed text shows <code>#handles</code>. <code>memory_get</code> and <code>/v1/node</code> accept them. A clashing handle is reported as ambiguous, with the candidates, instead of missing.</p><p class="chk"><b>Check:</b> the block fits at least the measured number of notes at 400, 800 and 1,500 tokens; a forced clash is reported.</p><p class="chk"><b>Built.</b> Handles in packed text, <code>memory_get</code>, <code>/v1/node</code> and <code>memory_supersede</code>. A clash lists only notes the caller can read. 12 tests.</p><div class="src"><span class="ev ev-v">V</span> measured on your notes</div></div></li>
+      <li class="item"><span class="id">1.3</span><div class="body"><h3>Show which search found each hit</h3><p>Each result says keyword, vector or both, so a reader can weigh a keyword-only hit differently.</p><p class="chk"><b>Check:</b> one note findable only by words, one only by meaning.</p><p class="chk"><b>Built.</b> Each hit shows kw, vec, both or graph. 4 tests.</p><div class="src"><span class="ev ev-v">V</span> the book's own lab found this useful</div></div></li>
+      <li class="item"><span class="id">1.4</span><div class="body"><h3>Search by tag</h3><p><code>tag=</code> finds notes by concept, file name or <code>session-summary</code>.</p><p class="chk"><b>Built.</b> Whole-tag match, ignoring case, applied before the candidate cut. 9 tests.</p><div class="src"><span class="ev ev-s">S</span> rad-mem searches by concept and file</div></div></li>
+      <li class="item"><span class="id">1.5</span><div class="body"><h3>Read-only hints on the read tools</h3><p>Mark the search, timeline, fetch and context tools read-only in the MCP list, so a client stops asking permission for reads while writes still ask.</p><p class="chk"><b>Built.</b> The eight read tools are marked read-only and supersede is marked destructive. A test runs every read and proves the notes, links and audit chain are unchanged. 6 tests.</p><div class="src"><span class="ev ev-v">V</span> claude-mem's source does this for the same reason</div></div></li>
+      <li class="item"><span class="id">1.6</span><div class="body"><h3>Neighbour hints when writing</h3><p>A write returns near-but-not-identical notes the writer is allowed to see. When a refused duplicate differs in a number or a negation, it says so, so the writer supersedes the old note instead of retrying. No model involved.</p><p class="chk"><b>Check:</b> a note that differs only by "not" is flagged; a private note never appears as a neighbour.</p><p class="chk"><b>Built, and the check changed.</b> On your notes the trigram band in the plan finds nothing: the median nearest neighbour scores 0.01, and two notes on the same fact score 0.04 and 0.22. The hints use content-word overlap of 0.25 or more instead. The work also fixed a leak: another agent's private note made a write come back as a duplicate with its id, and a trashed note blocked saving the same text again. 51 tests.</p><div class="src"><span class="ev ev-u">U</span> two readers reached this independently</div></div></li>
+      <li class="item"><span class="id">1.7</span><div class="body"><h3>Embedder fingerprint</h3><p>At start the vector service embeds a fixed canary text and compares it with the stored copy. A mismatch turns the vector side off and says why. <code>doctor</code> lists notes that have no vector yet.</p><p class="chk"><b>Built, with two extra checks.</b> The canary is pinned beside the vectors. At start three stored notes are also re-embedded and compared, and <code>doctor</code> counts the embedders in the vectors table. On your store 10 of 297 active notes have no vector today. 42 tests.</p><div class="src"><span class="ev ev-v">V</span> the Ollama mix-up <span class="ev ev-s">S</span> the book says mixed embedders fail silently</div></div></li>
+      <li class="item"><span class="id">1.8</span><div class="body"><h3>Scale guard</h3><p><code>stats</code> and <code>doctor</code> warn at 8,000 active notes (reads are slowing) and again at 20,000 (older notes stop appearing), and the results say when a scan hit that cap. The benchmark uses a new query every time so the cache cannot flatter it.</p><p class="chk"><b>Built.</b> Warnings at 8,000 and 20,000 notes in <code>stats</code>, <code>doctor</code> and the viewer; results carry <code>scan_capped</code>. Two cut bugs fixed: past the cap the timeline dropped the newest notes, and the context cut to the newest 3,000 before checking who may read them. 20 tests.</p></div></li>
+      <li class="item"><span class="id">1.9</span><div class="body"><h3>A standing "must never come back" suite</h3><p>Out-of-scope, expired, trashed, superseded and wrong-lane notes, plus decoy notes that read like instructions, must not come back from any read path.</p><p class="chk"><b>Built.</b> Eight kinds of hidden note against six agents through every read path, the MCP text and the admin routes, plus a test that fails when a route is added without a place in it. It found two problems, both fixed: <code>stats</code> counted every agent's private notes, and owner-approved notes were missing from the session list. One limit remains: an id suffix hints that a hidden note with the same title exists. 21 tests.</p><div class="src"><span class="ev ev-u">U</span> neither book chapter tests this</div></div></li>
+    </ol>
+
+    <div class="phase">
+      <h3>Phase 2. Measure before deciding</h3>
+      <span class="when">Build the instruments, then use the service for a few weeks.</span>
+    </div>
+    <ol class="items">
+      <li class="item"><span class="id">2.1</span><div class="body"><h3>A usage log, counts only</h3><p>For each read: which operation, which agent, how many notes, tokens served, tokens had everything been fetched, abstained or degraded, milliseconds, and the age band of what was fetched. No text and no ids. Owner-only <code>/v1/usage</code>, a <code>memctl census</code>, and a savings card with its baseline written on it and capped below 100%. It is for review and never feeds ranking, because an agent could inflate it.</p><div class="src"><span class="ev ev-s">S</span> the token-savings dashboard <span class="ev ev-u">U</span> two readers</div></div></li>
+      <li class="item"><span class="id">2.2</span><div class="body"><h3><code>memctl eval</code></h3><p>Answerable, unanswerable and must-not-retrieve questions; recall at 5, MRR, an abstention table and a paired bootstrap. The 0.25 and 0.34 floors were set on the same 50 questions, so check them with a 5-fold split.</p><div class="src"><span class="ev ev-u">U</span></div></div></li>
+      <li class="item"><span class="id">2.3</span><div class="body"><h3>Choose the decay from data</h3><p>Test whether usefulness falls with age like a power or like an exponential before building any age banding. The paper's premise is that the right timescale is unknown.</p><div class="src"><span class="ev ev-s">S</span> paper <span class="ev ev-s">S</span> claude-mem's old docs use an unexplained 30-day half-life</div></div></li>
+      <li class="item"><span class="id">2.4</span><div class="body"><h3>SQL paging for the read path</h3><p>Do it when the median read passes 100 ms or active notes pass 3,000, whichever comes first.</p></div></li>
+    </ol>
+
+    <div class="phase">
+      <h3>Phase 3. Needs your decision</h3>
+      <span class="when">Each changes what the service trusts or downloads.</span>
+    </div>
+    <ol class="items">
+      <li class="item"><span class="id">3.1</span><div class="body"><h3>Procedure notes</h3><p>An owner-approved kind with applies-when, steps, a stop condition and links to its evidence. Shown as labelled data. It keeps plain applied, worked and failed counts that never touch confidence, and it expires until re-approved. Agents can only propose into probation. Nothing is learned from transcripts.</p><div class="src"><span class="ev ev-u">U</span> a procedure steers behaviour, so it has the highest bar of any kind</div></div></li>
+      <li class="item"><span class="id">3.2</span><div class="body"><h3>A reranker experiment</h3><p>Score (query, note) pairs to sharpen abstention or ordering, and keep it only if the paired test on the 36 + 14 questions shows a gain. Needs a download of about 80 MB.</p></div></li>
+      <li class="item"><span class="id">3.3</span><div class="body"><h3>A reversible archive tier</h3><p>For old, never-fetched notes. Triggered when active notes pass about 2,000 or the usage log shows a long unread tail.</p></div></li>
+      <li class="item"><span class="id">3.4</span><div class="body"><h3>Related notes</h3><p>A read of typed neighbours, as basic-memory builds context around a note.</p><div class="src"><span class="ev ev-s">S</span></div></div></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="no">
+    <div class="section-head">
+      <h2 id="no">What I would not do</h2>
+      <p>Each of these came up in the reading and loses on the reasons below.</p>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Idea</th><th>Why not</th></tr></thead>
+        <tbody>
+          <tr><td class="k">A semantic query cache</td><td>It needs the query embedding first, which is most of the cost it would save, and a paraphrase hit can cross scopes. The exact cache keyed on scope and audit state stays.</td></tr>
+          <tr><td class="k">Capturing and compressing with a model inside the service</td><td>Text that reaches the model can steer what gets stored. The book's own code shows the result.</td></tr>
+          <tr><td class="k">Standing-instruction memories that always load</td><td>An agent-writable instruction is an injection route. Your CLAUDE.md is the owner-controlled place for that.</td></tr>
+          <tr><td class="k">Learning procedures from transcripts, or scoring them by a moving average</td><td>One conversation could write advice every user receives. The average measures nothing a control group would.</td></tr>
+          <tr><td class="k">Hosted features</td><td>claude-mem's hosted observer, TrueMemory's query expansion through a model and its default telemetry, and basic-memory's cloud all send data off the machine.</td></tr>
+          <tr><td class="k">Community scope, and a graph index for speed</td><td>There is one owner, and exact scanning is fine at this size.</td></tr>
+          <tr><td class="k">Any threshold taken from a book</td><td>None had a stated basis. Mine were measured on your questions.</td></tr>
+          <tr><td class="k">Installing the two forked agent collections</td><td>They are not about memory, and their always-loaded descriptions cost context in every session.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="ask">
+    <div class="decide">
+      <h2 id="ask">Decisions for you</h2>
+      <ol>
+        <li>Phase 1 is built. Restart the memory service to use it (below).</li>
+        <li>Procedure notes (3.1): yes, no, or after the usage log has run.</li>
+        <li>The reranker experiment (3.2): is a non-generative transformer within your "no language model" rule, and may I download the model?</li>
+      </ol>
+    </div>
+    <div class="note">
+      <h3>Before using it</h3>
+      <p>The memory service runs old code or is stopped. Start it with <code>python3 -I memctl serve --port 8765</code> (Ctrl-C first if it is running). The first start pins the embedder fingerprint beside your vectors and checks three stored notes against it.</p>
+    </div>
+  </section>
+
+  <footer>Sources: <code>docs/CLAUDE-MEM-PARITY.md</code>, the readers' notes under the readings folder, and the benchmark in <code>tools/bench_read_path.py</code>. Counts: 440 tests in 27 suites, 90 deliberate breaks, each caught (a full run before the current-focus note, then the ones it touches).</footer>
+</div>

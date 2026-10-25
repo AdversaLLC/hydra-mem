@@ -1,0 +1,25 @@
+# Run the memory service as a systemd USER unit (loopback only). NOT installed by anything; copy it yourself:
+#   mkdir -p ~/.config/systemd/user && cp contrib/memsvc.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now memsvc
+# Run `memctl init` first (creates the owner token) and keep the Ollama/embedding choices pinned in ~/.hydra/config.json.
+[Unit]
+Description=Local memory service for agents (127.0.0.1 only)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -I %h/ai-memory/memctl serve --port 8765
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.hydra
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+LockPersonality=true
+
+[Install]
+WantedBy=default.target

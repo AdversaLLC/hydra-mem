@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+"""Launcher for the owner's CLI; works under `python3 -I` because it puts its own folder on the path."""
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+from memsvc.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(main())

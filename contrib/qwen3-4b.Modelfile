@@ -1,0 +1,12 @@
+# Qwen3-4B-Instruct-2507 Q4_K_M, imported from a local file (no download). sha256 3605803b982cb64a... matches the upstream
+# unsloth/Qwen3-4B-Instruct-2507-GGUF page. ChatML template written out so chat works without relying on auto-detection.
+FROM /run/media/adversa/ACFAE0F3FAE0BAAA/Users/Admin/Desktop/USB/chloe-models/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+TEMPLATE """{{ if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ range .Messages }}<|im_start|>{{ .Role }}
+{{ .Content }}<|im_end|>
+{{ end }}<|im_start|>assistant
+"""
+PARAMETER stop <|im_end|>
+PARAMETER temperature 0.2
+PARAMETER num_ctx 4096
