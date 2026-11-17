@@ -107,8 +107,12 @@ The bridge remains optional, with no third-party dependency in hydra-mem.
 Explicit bridge environment settings and legacy discovery take precedence;
 when no legacy script is found, a configured `graph_py` can provide the bridge.
 Verify the bridge log and actual vault output before reporting completion.
-Cross-project rendering depends on the configured bridge and working directory;
-the memory row retains its explicit project even when rendered views are scoped.
+Explicit saves pass the saved project to the detached child through
+`HYDRA_BRIDGE_PROJECT`. Current Hydra Graph promotion honors that project for
+promotion, embedding and vault export even when the caller runs elsewhere.
+Older third-party bridges may ignore this optional environment hint. Context
+caches continue to follow the actual working root, avoiding cross-project cache
+pollution; hooks retain their existing working-directory behavior.
 No direct vault overwrite or new vault layout is introduced by hydra-mem.
 
 ## Second store: kuzu-memory via `hydra_bridge.py` (unified hook layer)

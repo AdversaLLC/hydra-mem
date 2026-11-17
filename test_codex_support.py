@@ -41,8 +41,9 @@ class VaultHandoff(unittest.TestCase):
             result=hm.mcp_call(self.store,'add',self.args)
         self.assertRegex(result,r'^stored id=\d+$');queue.assert_not_called()
     def test_enabled_save_then_queue_once(self):
-        def queue(_, db=None):
+        def queue(_, db=None, project=None):
             self.assertEqual(db,self.store.path)
+            self.assertEqual(project,'test')
             with sqlite3.connect(self.store.path) as independent:
                 self.assertEqual(independent.execute("select count(*) from observations").fetchone()[0],1)
             return True
@@ -75,15 +76,16 @@ class VaultHandoff(unittest.TestCase):
     def test_cli_db_override_reaches_actual_bridge_child(self):
         with tempfile.TemporaryDirectory() as t:
             root=Path(t);db=root/'selected.db';marker=root/'child.json';bridge=root/'bridge.py'
-            bridge.write_text("import os,json,pathlib,sys\nif sys.argv[1]=='promote': pathlib.Path(os.environ['TEST_MARKER']).write_text(json.dumps({'db':os.environ.get('HYDRA_MEM_DB')}))\nelse: print('synthetic context')\n")
+            bridge.write_text("import os,json,pathlib,sys\nif sys.argv[1]=='promote': pathlib.Path(os.environ['TEST_MARKER']).write_text(json.dumps({'db':os.environ.get('HYDRA_MEM_DB'),'project':os.environ.get('HYDRA_BRIDGE_PROJECT')}))\nelse: print('synthetic context')\n")
             env=dict(os.environ,HYDRA_MEM_DB=str(root/'wrong.db'),HYDRA_SYNC_ON_ADD='1',HYDRA_BRIDGE=str(bridge),HYDRA_BRIDGE_PYTHON=sys.executable,TEST_MARKER=str(marker))
-            result=subprocess.run([sys.executable,str(Path(hm.__file__)),'--db',str(db),'add','Synthetic CLI-selected database propagation regression','--type','note'],env=env,cwd=root,capture_output=True,text=True,timeout=10)
+            result=subprocess.run([sys.executable,str(Path(hm.__file__)),'--db',str(db),'add','Synthetic CLI-selected database propagation regression','--type','note','--project','selected-project'],env=env,cwd=root,capture_output=True,text=True,timeout=10)
             self.assertEqual(result.returncode,0,result.stderr);self.assertIn('vault_sync=queued',result.stdout)
             deadline=time.monotonic()+5
             while time.monotonic()<deadline:
                 if marker.exists() and not (root/'bridge-chain.lock').exists():break
                 time.sleep(0.05)
             self.assertTrue(marker.exists());self.assertEqual(json.loads(marker.read_text())['db'],str(db))
+            self.assertEqual(json.loads(marker.read_text())['project'],'selected-project')
 
     def test_queue_exception_does_not_turn_save_into_error(self):
         with patch.dict(os.environ,{'HYDRA_SYNC_ON_ADD':'1'}),patch.object(hm,'bridge_promote_async',side_effect=OSError('synthetic spawn failure')):

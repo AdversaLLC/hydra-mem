@@ -585,7 +585,7 @@ def _read_cache(root: str) -> tuple[str, float]:
         return "", float("inf")
 
 
-def bridge_promote_async(cwd: str | None, db: Path | None = None) -> bool:
+def bridge_promote_async(cwd: str | None, db: Path | None = None, project: str | None = None) -> bool:
     """Fire-and-forget: `hydra_bridge.py promote`, then `context` into the cache file.
     Returns True iff a process was started; never waits for it.
 
@@ -601,6 +601,8 @@ def bridge_promote_async(cwd: str | None, db: Path | None = None) -> bool:
     cache_path = db_path.parent / "bridge-cache" / bridge_cache_path(root).name
     child_env = _bridge_env()
     child_env["HYDRA_MEM_DB"] = str(db_path)
+    if project:
+        child_env["HYDRA_BRIDGE_PROJECT"] = project
     cmd = [py, "-c", BRIDGE_CHAIN, str(script), root, str(cache_path),
            str(log_path.parent / "bridge-chain.lock")]
     try:
@@ -633,7 +635,7 @@ def bridge_promote_async(cwd: str | None, db: Path | None = None) -> bool:
                 pass
 
 
-def sync_after_add(db: Path | None = None) -> str:
+def sync_after_add(db: Path | None = None, project: str | None = None) -> str:
     """Opt-in handoff after a durable explicit save; never claim sync completed.
 
     Environment overrides config, including an explicit false value. The core
@@ -645,7 +647,7 @@ def sync_after_add(db: Path | None = None) -> str:
     if str(enabled).strip().lower() not in ("1", "true", "yes", "on"):
         return ""
     try:
-        queued = bridge_promote_async(None, db=db)
+        queued = bridge_promote_async(None, db=db, project=project)
     except (OSError, ValueError, RuntimeError):
         queued = False
     return "vault_sync=queued" if queued else "vault_sync=unavailable"
@@ -1428,10 +1430,11 @@ def mcp_call(store: Store, name: str, a: dict) -> str:
             raise ValueError(f"type must be one of {', '.join(WISDOM_TYPES)}; got {typ!r}")
         if conf not in ("V", "S", "U"):
             raise ValueError(f"conf must be V, S or U; got {conf!r}")
-        rid = store.add(a["text"], typ, a.get("project") or project_for(None), a.get("tags") or [], conf, source="mcp")
+        project = a.get("project") or project_for(None)
+        rid = store.add(a["text"], typ, project, a.get("tags") or [], conf, source="mcp")
         if not rid:
             return "duplicate; not stored"
-        sync = sync_after_add(store.path)
+        sync = sync_after_add(store.path, project=project)
         return f"stored id={rid}" + (f"; {sync}" if sync else "")
     if name == "stats":
         return json.dumps(store.stats(), indent=1)
@@ -1545,8 +1548,9 @@ def main(argv=None) -> int:
     if a.cmd == "mcp":
         return mcp_main(store)
     if a.cmd == "add":
-        rid = store.add(a.text, a.type, a.project or project_for(None), parse_tags(a.tags), a.conf)
-        sync = sync_after_add(store.path) if rid else ""
+        project = a.project or project_for(None)
+        rid = store.add(a.text, a.type, project, parse_tags(a.tags), a.conf)
+        sync = sync_after_add(store.path, project=project) if rid else ""
         print((f"stored id={rid}" + (f"; {sync}" if sync else "")) if rid else "duplicate; not stored")
         return 0
     if a.cmd == "search":
