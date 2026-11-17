@@ -67,6 +67,50 @@ For a local model runner that speaks MCP (Ollama-based agents, LM Studio, OpenHa
 register `python hydra_mem.py mcp` as a stdio server. For one that doesn't, call the CLI
 with `--json` and paste `context` output into the system prompt.
 
+## Codex and local AI clients
+
+The stdio MCP server is client-neutral: Claude, Codex and a host-local AI agent
+can use the same SQLite store. Do not create a second empty database just to
+change clients. Register the installed script (adjust these portable paths):
+
+```bash
+codex mcp add hydra-mem -- python3 /absolute/path/to/hydra_mem.py mcp
+```
+
+The existing Claude installer remains Claude-specific. It does not install
+Codex hooks or make an inference endpoint into a tool-using agent. For a local
+client without MCP, call `context --project NAME` before inference and explicitly
+`add` distilled observations afterwards. A model endpoint needs a client/agent
+that supplies context and invokes tools; it cannot access memory merely because
+it implements an OpenAI-compatible inference API.
+
+Hook extraction accepts the original Claude assistant messages, Codex JSONL
+`response_item` assistant message records, and the optional
+`last_assistant_message` field on a Stop/SessionEnd payload. User and tool
+records are not extracted as assistant wisdom. Only tagged observations are
+captured; configuring hooks does not prove a particular client delivers them.
+
+### Optional Obsidian/vault handoff for explicit saves
+
+Hook-captured wisdom already queues the configured bridge. Explicit CLI/MCP
+`add` can do the same when `HYDRA_SYNC_ON_ADD=1`, or when `sync_on_add` is true
+in the existing `~/.hydra/config.json`. It is **off by default**. An explicit
+`HYDRA_SYNC_ON_ADD=0` overrides configuration.
+
+- `stored id=N` means the redacted observation was committed to SQLite.
+- `vault_sync=queued` means a detached existing bridge process was started,
+  **not** that Obsidian synchronization or embedding has completed.
+- `vault_sync=unavailable` means the save succeeded but no bridge job started.
+- A duplicate save queues no additional work.
+
+The bridge remains optional, with no third-party dependency in hydra-mem.
+Explicit bridge environment settings and legacy discovery take precedence;
+when no legacy script is found, a configured `graph_py` can provide the bridge.
+Verify the bridge log and actual vault output before reporting completion.
+Cross-project rendering depends on the configured bridge and working directory;
+the memory row retains its explicit project even when rendered views are scoped.
+No direct vault overwrite or new vault layout is introduced by hydra-mem.
+
 ## Second store: kuzu-memory via `hydra_bridge.py` (unified hook layer)
 
 The same five hydra-mem hooks also feed a per-project **kuzu-memory** graph

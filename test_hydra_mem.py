@@ -6,6 +6,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -350,7 +351,8 @@ class BridgeTests(_HookBase):
         try:
             os.environ.pop("HYDRA_BRIDGE", None)
             os.environ["HYDRA_BRIDGE_PYTHON"] = sys.executable
-            found = hm.bridge_script()
+            with patch.object(hm, "_hydra_config", return_value=""):
+                found = hm.bridge_script()
             expected = [d / hm.BRIDGE_NAME for d in hm.BRIDGE_CANDIDATE_DIRS if (d / hm.BRIDGE_NAME).is_file()]
             self.assertEqual(found, expected[0] if expected else None)
             self.assertNotIn("kuzu", hm.BRIDGE_NAME.lower())
@@ -592,7 +594,7 @@ class GraphReadTests(unittest.TestCase):
             os.environ.clear(); os.environ.update(env_before)
 
 
-@unittest.skipUnless(GRAPH_PY.is_file(), f"graph interpreter not installed: {GRAPH_PY}")
+@unittest.skipUnless(GRAPH_PY.is_file() and MIGRATE.is_file(), "optional graph interpreter or migrate_to_graph.py is absent")
 class MigrateToGraphTests(unittest.TestCase):
     """migrate_to_graph.py --dry-run / inline write, then graph_recall / graph_context read it back."""
 

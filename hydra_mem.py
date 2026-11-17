@@ -109,6 +109,9 @@ def _discover_bridge_python() -> str:
                  home / "pipx/venvs/kuzu-memory/Scripts/python.exe"):            # pipx, Windows
         if cand.exists():
             return str(cand)
+    graph_py = Path(_hydra_config("graph_py")).expanduser()
+    if graph_py.is_file():
+        return _hydra_config("python") or sys.executable
     return ""
 
 
@@ -495,15 +498,23 @@ def read_transcript_from(path: str, offset: int) -> tuple[list[dict], int]:
 def assistant_texts(entries: list[dict]) -> list[str]:
     texts = []
     for e in entries:
-        if not isinstance(e, dict) or e.get("type") != "assistant":
+        if not isinstance(e, dict):
             continue
-        msg = e.get("message")
+        codex = e.get("type") == "response_item"
+        if codex:
+            msg = e.get("payload")
+            if not isinstance(msg, dict) or msg.get("role") != "assistant" or msg.get("type") != "message":
+                continue
+        elif e.get("type") == "assistant":
+            msg = e.get("message")
+        else:
+            continue
         content = msg.get("content") if isinstance(msg, dict) else None
         if isinstance(content, str):
             texts.append(content)
         elif isinstance(content, list):
             for c in content:
-                if isinstance(c, dict) and c.get("type") == "text" and isinstance(c.get("text"), str) and c["text"]:
+                if isinstance(c, dict) and c.get("type") in ("text", "output_text") and isinstance(c.get("text"), str) and c["text"]:
                     texts.append(c["text"])
     return texts
 
@@ -524,6 +535,9 @@ def bridge_script() -> Path | None:
         p = d / BRIDGE_NAME
         if p.is_file():
             return p
+    graph = Path(_hydra_config("graph_py")).expanduser()
+    if graph.is_file():
+        return graph
     return None
 
 
@@ -571,7 +585,7 @@ def _read_cache(root: str) -> tuple[str, float]:
         return "", float("inf")
 
 
-def bridge_promote_async(cwd: str | None) -> bool:
+def bridge_promote_async(cwd: str | None, db: Path | None = None) -> bool:
     """Fire-and-forget: `hydra_bridge.py promote`, then `context` into the cache file.
     Returns True iff a process was started; never waits for it.
 
@@ -582,15 +596,20 @@ def bridge_promote_async(cwd: str | None) -> bool:
     if not py:
         return False
     root = project_root_for(cwd)
-    cmd = [py, "-c", BRIDGE_CHAIN, str(script), root, str(bridge_cache_path(root)),
-           str(bridge_log_path().parent / "bridge-chain.lock")]
+    db_path = Path(db).resolve() if db is not None else DEFAULT_DB.resolve()
+    log_path = db_path.parent / "bridge.log"
+    cache_path = db_path.parent / "bridge-cache" / bridge_cache_path(root).name
+    child_env = _bridge_env()
+    child_env["HYDRA_MEM_DB"] = str(db_path)
+    cmd = [py, "-c", BRIDGE_CHAIN, str(script), root, str(cache_path),
+           str(log_path.parent / "bridge-chain.lock")]
     try:
-        bridge_log_path().parent.mkdir(parents=True, exist_ok=True)
-        log = open(bridge_log_path(), "ab")
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log = open(log_path, "ab")
     except Exception:
         log = subprocess.DEVNULL
     kw: dict = {"stdin": subprocess.DEVNULL, "stdout": log, "stderr": subprocess.STDOUT,
-                "env": _bridge_env(), "close_fds": True}
+                "env": child_env, "close_fds": True}
     if os.name == "nt":
         kw["creationflags"] = (subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
                                | getattr(subprocess, "CREATE_NO_WINDOW", 0))
@@ -612,6 +631,24 @@ def bridge_promote_async(cwd: str | None) -> bool:
                 log.close()  # the child holds its own duplicated handle
             except Exception:
                 pass
+
+
+def sync_after_add(db: Path | None = None) -> str:
+    """Opt-in handoff after a durable explicit save; never claim sync completed.
+
+    Environment overrides config, including an explicit false value. The core
+    remains usable without any bridge or third-party package.
+    """
+    enabled = os.environ.get("HYDRA_SYNC_ON_ADD")
+    if enabled is None:
+        enabled = _hydra_config("sync_on_add")
+    if str(enabled).strip().lower() not in ("1", "true", "yes", "on"):
+        return ""
+    try:
+        queued = bridge_promote_async(None, db=db)
+    except (OSError, ValueError, RuntimeError):
+        queued = False
+    return "vault_sync=queued" if queued else "vault_sync=unavailable"
 
 
 def _bridge_context_live(py: str, script: Path, root: str, timeout: float) -> str:
@@ -1126,12 +1163,19 @@ def hook_main(event: str, store: Store) -> int:
             store.set_offset(sid, new_off)
         else:
             n = 0
+        # Some Codex hook transports supply the final assistant message directly.
+        # Store.add deduplication keeps transcript + direct-message capture idempotent.
+        final_message = payload.get("last_assistant_message")
+        if isinstance(final_message, str):
+            for typ, body, conf, tags in extract_tagged(final_message):
+                if store.add(body, type=typ, project=project, tags=tags, conf=conf, session=sid, source="hook-assistant"):
+                    n += 1
         if event == "SessionEnd":
             store.end_session(sid)
         # Second store: hand the new wisdom to kuzu-memory without waiting for it.
         # Every Stop that produced wisdom, plus every SessionEnd as a catch-up pass.
         if n or event == "SessionEnd":
-            bridge_promote_async(cwd)
+            bridge_promote_async(cwd, db=store.path)
         return 0
 
     print(f"hydra-mem: unknown hook event {event}", file=sys.stderr)
@@ -1385,7 +1429,10 @@ def mcp_call(store: Store, name: str, a: dict) -> str:
         if conf not in ("V", "S", "U"):
             raise ValueError(f"conf must be V, S or U; got {conf!r}")
         rid = store.add(a["text"], typ, a.get("project") or project_for(None), a.get("tags") or [], conf, source="mcp")
-        return f"stored id={rid}" if rid else "duplicate; not stored"
+        if not rid:
+            return "duplicate; not stored"
+        sync = sync_after_add(store.path)
+        return f"stored id={rid}" + (f"; {sync}" if sync else "")
     if name == "stats":
         return json.dumps(store.stats(), indent=1)
     raise ValueError(f"unknown tool {name}")
@@ -1499,7 +1546,9 @@ def main(argv=None) -> int:
         return mcp_main(store)
     if a.cmd == "add":
         rid = store.add(a.text, a.type, a.project or project_for(None), parse_tags(a.tags), a.conf)
-        print(f"stored id={rid}" if rid else "duplicate; not stored"); return 0
+        sync = sync_after_add(store.path) if rid else ""
+        print((f"stored id={rid}" + (f"; {sync}" if sync else "")) if rid else "duplicate; not stored")
+        return 0
     if a.cmd == "search":
         rows = store.search(a.query, a.project, a.type, a.limit, a.all)
         print(json.dumps([row_to_record(r) for r in rows], indent=1) if a.json else fmt_index(rows)); return 0
